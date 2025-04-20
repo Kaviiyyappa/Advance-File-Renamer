@@ -14,7 +14,7 @@ class Config(object):
  
     BOT_UPTIME  = time.time()
     START_PIC   = os.environ.get("START_PIC", "https://iili.io/3KDcyZB.md.jpg")
-    START_STICKER   = "CAACAgUAAyEFAASUwGgHAAIQiWgDvNFiSFPYFaLFw4QoW6I5YdUIAAJvDwACWl-YVAG0eSEZCEaXNgQ"
+    START_STICKER   = "CAACAgUAAyEFAASUwGgHAAIQwWgEbJZ5TgLj7QXhvMhGtWF2L30EAAIzEwACTrLwVSdrhgIPuK1TNgQ"
     FORCE_PIC   = os.environ.get("FORCE_PIC", "https://www.wallpaperflare.com/static/591/238/424/naruto-shippuuden-uzumaki-naruto-uchiha-sasuke-rinnegan-wallpaper.jpg")
     ADMINS       = [int(admins) if id_pattern.search(admins) else admins for admins in os.environ.get('ADMINS', '6302971969 7086472788 6039119180 1136967391').split()]
     ADMIN       = [int(admin) if id_pattern.search(admin) else admin for admin in os.environ.get('ADMIN', '6302971969 7086472788 6039119180 1136967391').split()]
