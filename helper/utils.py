@@ -70,14 +70,14 @@ async def progress_for_pyrogram(current, total, ud_type, message, start):
                 )
                 
                 tmp = (
-                    f"{progress}\n"
-                    f"{Txt.PROGRESS_BAR.format(
+                    f"{progress}\n",
+                    Txt.PROGRESS_BAR.format(
                         round(percentage, 2),
                         humanbytes(current),
                         humanbytes(total),
                         humanbytes(speed),
                         TimeFormatter((total - current) / speed * 1000) if speed > 0 else "0s"
-                    )}"
+                    ).split('\n', 1)
                 )
 
                 try:
