@@ -24,6 +24,7 @@ import pytz
 from asyncio import Semaphore
 import subprocess
 import json
+from collections import defaultdict
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
@@ -40,6 +41,96 @@ USER_LIMITS = {}
 global PREMIUM_MODE, PREMIUM_MODE_EXPIRY
 PREMIUM_MODE = Config.GLOBAL_TOKEN_MODE
 PREMIUM_MODE_EXPIRY = Config.GLOBAL_TOKEN_MODE
+
+# Improved File Processing Queue
+class FileProcessingQueue:
+    def __init__(self, max_concurrent_per_user=2, max_global_concurrent=10):
+        self.user_queues = defaultdict(asyncio.Queue)
+        self.user_semaphores = {}
+        self.global_semaphore = asyncio.Semaphore(max_global_concurrent)
+        self.max_concurrent_per_user = max_concurrent_per_user
+        self.active_tasks = set()
+        self.user_tasks = defaultdict(set)
+        self.logger = logging.getLogger("FileProcessingQueue")
+    
+    def get_user_semaphore(self, user_id):
+        """Get or create a semaphore for a user"""
+        if user_id not in self.user_semaphores:
+            # Create a semaphore for this user
+            concurrency = Config.ADMIN_OR_PREMIUM_TASK_LIMIT if user_id in Config.ADMIN else Config.NORMAL_TASK_LIMIT
+            self.user_semaphores[user_id] = asyncio.Semaphore(concurrency)
+        return self.user_semaphores[user_id]
+    
+    async def add_task(self, user_id, task_func, *args, **kwargs):
+        """Add a task to the queue for a specific user"""
+        task_item = (task_func, args, kwargs)
+        await self.user_queues[user_id].put(task_item)
+        
+        # Start the processor if not already running
+        self._ensure_processor_running(user_id)
+        
+        # Return position in queue
+        return self.user_queues[user_id].qsize()
+    
+    def _ensure_processor_running(self, user_id):
+        """Ensure a processor is running for this user"""
+        processor = asyncio.create_task(self._process_user_queue(user_id))
+        self.active_tasks.add(processor)
+        self.user_tasks[user_id].add(processor)
+        processor.add_done_callback(lambda t: self._cleanup_task(t, user_id))
+    
+    def _cleanup_task(self, task, user_id):
+        """Remove completed task from tracking sets"""
+        if task in self.active_tasks:
+            self.active_tasks.remove(task)
+        if user_id in self.user_tasks and task in self.user_tasks[user_id]:
+            self.user_tasks[user_id].remove(task)
+    
+    async def _process_user_queue(self, user_id):
+        """Process the queue for a specific user"""
+        queue = self.user_queues[user_id]
+        user_semaphore = self.get_user_semaphore(user_id)
+        
+        while not queue.empty():
+            # Get the next task
+            task_func, args, kwargs = await queue.get()
+            
+            # Execute with limited concurrency
+            async with user_semaphore, self.global_semaphore:
+                try:
+                    self.logger.info(f"Processing task for user {user_id}")
+                    await task_func(*args, **kwargs)
+                except FloodWait as e:
+                    self.logger.warning(f"FloodWait: {e.value} seconds")
+                    await asyncio.sleep(e.value + 1)
+                    # Put the task back in the queue
+                    await queue.put((task_func, args, kwargs))
+                except Exception as e:
+                    self.logger.error(f"Error processing task for user {user_id}: {e}")
+                finally:
+                    queue.task_done()
+                    self.logger.info(f"Task completed for user {user_id}")
+    
+    def get_queue_size(self, user_id):
+        """Get the number of tasks in the queue for a user"""
+        return self.user_queues[user_id].qsize()
+    
+    def get_active_tasks(self, user_id):
+        """Get the number of active tasks for a user"""
+        return len(self.user_tasks[user_id])
+    
+    def clear_queue(self, user_id):
+        """Clear all tasks for a user"""
+        # Create a new empty queue
+        old_size = self.user_queues[user_id].qsize()
+        self.user_queues[user_id] = asyncio.Queue()
+        return old_size
+
+# Initialize the file queue
+file_queue = FileProcessingQueue(
+    max_concurrent_per_user=Config.ADMIN_OR_PREMIUM_TASK_LIMIT,
+    max_global_concurrent=Config.MAX_CONCURRENT_TASKS
+)
 
 def detect_quality(file_name):
     quality_order = {
@@ -116,28 +207,46 @@ async def end_sequence(client, message: Message):
 
     sorted_files = sorted(file_list, key=sorting_key)
 
-    await message.reply_text(f"**Sᴇǫᴜᴇɴᴄᴇ ᴇɴᴅᴇᴅ! Sᴇɴᴅɪɴɢ {len(sorted_files)} ғɪʟᴇs ʙᴀᴄᴋ...**")
+    status_msg = await message.reply_text(f"**Sᴇǫᴜᴇɴᴄᴇ ᴇɴᴅᴇᴅ! Qᴜᴇᴜɪɴɢ {len(sorted_files)} ғɪʟᴇs ғᴏʀ ᴘʀᴏᴄᴇssɪɴɢ...**")
 
-
+    # Process files in sequence using the queue system
     for index, file in enumerate(sorted_files):
         try:
-            await client.send_document(
-                message.chat.id,
-                file["file_id"],
-                caption=f"**{file.get('file_name', '')}**"
-            )
-            
-            if index < len(sorted_files) - 1:
-                await asyncio.sleep(0.5)
-        except FloodWait as e:
-            await asyncio.sleep(e.value + 1)
+            position = await file_queue.add_task(user_id, process_sequence_file, client, message, file, index+1, len(sorted_files))
+            if index % 10 == 0 or index == len(sorted_files) - 1:  # Update status every 10 files or on last file
+                await status_msg.edit(f"**Qᴜᴇᴜᴇᴅ {index+1}/{len(sorted_files)} ғɪʟᴇs...**")
         except Exception as e:
-            logger.error(f"Error sending file: {e}")
+            logger.error(f"Error in sequence: {e}")
+            await status_msg.edit(f"**Eʀʀᴏʀ ǫᴜᴇᴜɪɴɢ ғɪʟᴇ {index+1}: {str(e)}**")
+    
+    await status_msg.edit(f"**Sᴜᴄᴄᴇssғᴜʟʟʏ ǫᴜᴇᴜᴇᴅ {len(sorted_files)} ғɪʟᴇs ғᴏʀ ᴘʀᴏᴄᴇssɪɴɢ!**\n**Cʜᴇᴄᴋ ᴘʀᴏɢʀᴇss ᴜsɪɴɢ /position**")
 
     try:
         await client.delete_messages(chat_id=message.chat.id, message_ids=delete_messages)
     except Exception as e:
         logger.error(f"Error deleting messages: {e}")
+
+async def process_sequence_file(client, message, file_info, index, total):
+    """Process a single file from a sequence"""
+    try:
+        file_id = file_info["file_id"]
+        file_name = file_info.get("file_name", "Unknown")
+        
+        # Send a copy of the file to the user with proper formatting
+        await client.send_document(
+            message.chat.id,
+            file_id,
+            caption=f"**{file_name}** ({index}/{total})"
+        )
+        logger.info(f"Processed sequence file {index}/{total}: {file_name}")
+    except FloodWait as e:
+        logger.warning(f"FloodWait in sequence processing: {e.value} seconds")
+        await asyncio.sleep(e.value + 1)
+        # Retry after flood wait
+        await process_sequence_file(client, message, file_info, index, total)
+    except Exception as e:
+        logger.error(f"Error processing sequence file: {e}")
+        await message.reply_text(f"**Eʀʀᴏʀ ᴘʀᴏᴄᴇssɪɴɢ ғɪʟᴇ {index}/{total}: {str(e)}**")
 
 @Client.on_message(filters.command("premium") & filters.private)
 async def global_premium_control(client, message: Message):
@@ -314,6 +423,7 @@ async def cleanup_files(*paths):
         try:
             if path and os.path.exists(path):
                 os.remove(path)
+                logger.info(f"Cleaned up {path}")
         except Exception as e:
             logger.error(f"Error removing {path}: {e}")
 
@@ -371,123 +481,23 @@ async def add_metadata(input_path, output_path, user_id):
     if process.returncode != 0:
         raise RuntimeError(f"FFmpeg error: {stderr.decode()}")
 
-@Client.on_message(filters.private & (filters.document | filters.video | filters.audio))
-async def auto_rename_files(client, message: Message):
+async def process_file_with_retry(client, message, file_id, file_name, file_size, media_type):
+    """Process a file with retry logic for failures"""
+    max_retries = Config.FLOODWAIT_RETRIES if hasattr(Config, "FLOODWAIT_RETRIES") else 3
+    retry_count = 0
     user_id = message.from_user.id
-    user = message.from_user
-
-    file_id = None
-    file_name = None
     download_path = None
     metadata_path = None
     thumb_path = None
     file_path = None
-
-    is_admin = hasattr(Config, "ADMIN") and user_id in Config.ADMIN
-    user_data = await DARKXSIDE78.col.find_one({"_id": user_id})
-    is_premium = user_data.get("is_premium", False) if user_data else False
-    use_tokens = user_data.get("use_tokens", False) if user_data else False
-    premium_expiry = user_data.get("premium_expiry")
-    if is_premium and premium_expiry:
-        if datetime.now() < premium_expiry:
-            is_premium = True
-        else:
-            await DARKXSIDE78.col.update_one(
-                {"_id": user_id},
-                {"$set": {"is_premium": False, "premium_expiry": None}}
-            )
-            is_premium = False
-
-    if not is_premium:
-        current_tokens = user_data.get("token", Config.DEFAULT_TOKEN)
-        if current_tokens <= 0:
-            await message.reply_text("**Yᴏᴜ'ᴠᴇ ʀᴜɴ ᴏᴜᴛ ᴏғ ᴛᴏᴋᴇɴs!\nGᴇɴᴇʀᴀᴛᴇ ᴍᴏʀᴇ ʙʏ ᴜsɪɴɢ /gentoken ᴄᴍᴅ.**")
-            return
     
-    if PREMIUM_MODE and not is_premium:
-        current_tokens = user_data.get("token", 0)
-        if current_tokens <= 0:
-            return await message.reply_text("**Yᴏᴜ'ᴠᴇ ʀᴜɴ ᴏᴜᴛ ᴏғ ᴛᴏᴋᴇɴs!\nGᴇɴᴇʀᴀᴛᴇ ᴍᴏʀᴇ ʙʏ ᴜsɪɴɢ /gentoken ᴄᴍᴅ.**")
-        await DARKXSIDE78.col.update_one(
-            {"_id": user_id},
-            {"$inc": {"token": -1}}
-        )
-
-    concurrency_limit = Config.ADMIN_OR_PREMIUM_TASK_LIMIT if (is_admin or is_premium) else Config.NORMAL_TASK_LIMIT
-    if user_id in USER_LIMITS:
-        if USER_LIMITS[user_id] != concurrency_limit:
-            USER_SEMAPHORES[user_id] = asyncio.Semaphore(concurrency_limit)
-            USER_LIMITS[user_id] = concurrency_limit
-    else:
-        USER_LIMITS[user_id] = concurrency_limit
-        USER_SEMAPHORES[user_id] = asyncio.Semaphore(concurrency_limit)
-
-    semaphore = USER_SEMAPHORES[user_id]
-
-    async with semaphore:
-        if user_id in active_sequences:
-            if message.document:
-                file_id = message.document.file_id
-                file_name = message.document.file_name
-            elif message.video:
-                file_id = message.video.file_id
-                file_name = f"{message.video.file_name}.mp4"
-            elif message.audio:
-                file_id = message.audio.file_id
-                file_name = f"{message.audio.file_name}.mp3"
-
-            file_info = {"file_id": file_id, "file_name": file_name if file_name else "Unknown"}
-            active_sequences[user_id].append(file_info)
-            await message.reply_text("Fɪʟᴇ ʀᴇᴄᴇɪᴠᴇᴅ ɪɴ sᴇǫᴜᴇɴᴄᴇ...\n\nEɴᴅ Sᴇǫᴜᴇɴᴄᴇ ʙʏ ᴜsɪɴɢ /esequence")
-            return
-
-        format_template = await DARKXSIDE78.get_format_template(user_id)
-        media_preference = await DARKXSIDE78.get_media_preference(user_id)
-
-        if not format_template:
-            return await message.reply_text("**Aᴜᴛᴏ ʀᴇɴᴀᴍᴇ ғᴏʀᴍᴀᴛ ɴᴏᴛ sᴇᴛ\nPʟᴇᴀsᴇ sᴇᴛ ᴀ ʀᴇɴᴀᴍᴇ ғᴏʀᴍᴀᴛ ᴜsɪɴɢ /autorename**")
-
-        if message.document:
-            file_id = message.document.file_id
-            file_name = message.document.file_name
-            file_size = message.document.file_size
-            media_type = "document"
-        elif message.video:
-            file_id = message.video.file_id
-            file_name = message.video.file_name or "video"
-            file_size = message.video.file_size
-            media_type = "video"
-        elif message.audio:
-            file_id = message.audio.file_id
-            file_name = message.audio.file_name or "audio"
-            file_size = message.audio.file_size
-            media_type = "audio"
-        else:
-            return await message.reply_text("**Uɴsᴜᴘᴘᴏʀᴛᴇᴅ ғɪʟᴇ ᴛʏᴘᴇ**")
-
-        if file_id in renaming_operations:
-            elapsed_time = (datetime.now() - renaming_operations[file_id]).seconds
-            if elapsed_time < 10:
-                return
-
-        renaming_operations[file_id] = datetime.now()
-
+    while retry_count < max_retries:
         try:
-            season, episode = extract_season_episode(file_name)
-            quality = extract_quality(file_name)
-
-            audio_label = ""
-            if media_type == "video":
-                try:
-                    audio_info = await detect_audio_info(file_path)
-                    audio_label = get_audio_label(audio_info)
-                    logger.info(f"Audio detection results: {audio_info} -> {audio_label}")
-                except Exception as e:
-                    logger.error(f"Audio detection failed: {e}")
-
+            format_template = await DARKXSIDE78.get_format_template(user_id)
+            media_preference = await DARKXSIDE78.get_media_preference(user_id)
             ext = os.path.splitext(file_name)[1] or ('.mp4' if media_type == 'video' else '.mp3')
-            download_path  = f"downloads/{file_name}"
-            metadata_path  = f"metadata/{file_name}"
+            download_path = f"downloads/{file_name}"
+            metadata_path = f"metadata/{file_name}"
             os.makedirs(os.path.dirname(download_path), exist_ok=True)
             os.makedirs(os.path.dirname(metadata_path), exist_ok=True)
 
@@ -499,13 +509,31 @@ async def auto_rename_files(client, message: Message):
                     progress=progress_for_pyrogram,
                     progress_args=("**Dᴏᴡɴʟᴏᴀᴅɪɴɢ...**", msg, time.time())
                 )
+            except FloodWait as e:
+                await msg.edit(f"**FloodWait: Waiting {e.value} seconds...**")
+                await asyncio.sleep(e.value + 1)
+                continue
             except Exception as e:
-                await msg.edit(f"Dᴏᴡɴʟᴏᴀᴅ ғᴀɪʟᴇᴅ: {e}")
+                await msg.edit(f"**Dᴏᴡɴʟᴏᴀᴅ ғᴀɪʟᴇᴅ: {e}**")
                 raise
+                
             await asyncio.sleep(0.5)
-            audio_info = await detect_audio_info(file_path)
-            audio_label = get_audio_label(audio_info)
+            
+            # Extract information from the file
+            season, episode = extract_season_episode(file_name)
+            quality = extract_quality(file_name)
+            
+            audio_info = None
+            audio_label = ""
+            if media_type == "video" and os.path.exists(file_path):
+                try:
+                    audio_info = await detect_audio_info(file_path)
+                    audio_label = get_audio_label(audio_info)
+                    logger.info(f"Audio detection results: {audio_info} -> {audio_label}")
+                except Exception as e:
+                    logger.error(f"Audio detection failed: {e}")
 
+            # Apply replacements to the template
             replacements = {
                 '{season}': season   or 'XX',
                 '{episode}':episode  or 'XX',
