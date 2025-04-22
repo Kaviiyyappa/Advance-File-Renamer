@@ -71,13 +71,13 @@ async def progress_for_pyrogram(current, total, ud_type, message, start):
                 
                 tmp = (
                     f"{progress}\n",
-                    Txt.PROGRESS_BAR.format(
+                    f"{Txt.PROGRESS_BAR.format(
                         round(percentage, 2),
                         humanbytes(current),
                         humanbytes(total),
                         humanbytes(speed),
                         TimeFormatter((total - current) / speed * 1000) if speed > 0 else "0s"
-                    ).split('\n', 1)
+                    )}"
                 )
 
                 try:
@@ -88,7 +88,7 @@ async def progress_for_pyrogram(current, total, ud_type, message, start):
                         ]])
                     )
                     LAST_UPDATE_TIMES[message_id] = now
-                    await asyncio.sleep(0.5)
+                    await asyncio.sleep(1)
                 except FloodWait as e:
                     await asyncio.sleep(e.value + 1)
                     LAST_UPDATE_TIMES[message_id] = time.time() + e.value + 1
