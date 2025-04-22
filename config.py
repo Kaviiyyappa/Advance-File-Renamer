@@ -39,14 +39,14 @@ class Config(object):
     VERSION = "4.1.2"
     LAST_UPDATED = "2024-04-20"
     DB_VERSION = "1.4.2"
-    FLOODWAIT_RETRIES = 999
+    FLOODWAIT_RETRIES = 10
     FLOODWAIT_WAIT = 15
     DEFAULT_TOKEN = 100
     LEADERBOARD_DELETE_TIMER = 30
     RENAMED_DELETE_TIMER = 120
     ADMIN_OR_PREMIUM_TASK_LIMIT = 6
     NORMAL_TASK_LIMIT = 3
-    GLOBAL_TOKEN_MODE = True
+    GLOBAL_TOKEN_MODE = False
     GLOBAL_TOKEN_EXPIRY = None
     SESSION_NAME = "DARKXSIDE78"
     WEBHOOK = bool(os.environ.get("WEBHOOK", "True"))
@@ -82,7 +82,7 @@ class Txt(object):
 ❍ ᴅᴀᴛᴀʙᴀꜱᴇ : <a href="https://www.mongodb.com/">ᴍᴏɴɢᴏ ᴅʙ</a>
 ❍ ʜᴏꜱᴛᴇᴅ ᴏɴ : <a href="https://t.me/{Config.DEVELOPER_USERNAME}">ᴠᴘs</a>
 ❍ ᴍᴀɪɴ ᴄʜᴀɴɴᴇʟ : <a href="https://t.me/{Config.BOT_CHANNEL_USERNAME}">{Config.BOT_CHANNEL_NAME}</a>
-❍ ʜᴇʟᴘ ᴄʜᴀɴɴᴇʟ : <a href="https://t.me/{Config.SUPPORT_CHANNEL_USERNAME}">{Config.SUPPORT_CHANNEL_USERNAME}</a>
+❍ ʜᴇʟᴘ ᴄʜᴀɴɴᴇʟ : <a href="https://t.me/{Config.SUPPORT_CHANNEL_USERNAME}">{Config.SUPPORT_CHANNEL_NAME}</a>
 
 ➻ ᴄʟɪᴄᴋ ᴏɴ ᴛʜᴇ ʙᴜᴛᴛᴏɴs ɢɪᴠᴇɴ ʙᴇʟᴏᴡ ғᴏʀ ɢᴇᴛᴛɪɴɢ ʙᴀsɪᴄ ʜᴇʟᴩ ᴀɴᴅ ɪɴғᴏ ᴀʙᴏᴜᴛ ᴍᴇ.</b>"""
 
