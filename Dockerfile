@@ -8,6 +8,7 @@ RUN apt update && apt install -y \
     libssl-dev \
     libffi-dev \
     python3-dev \
+    ffprobe \
     && rm -rf /var/lib/apt/lists/*  # Clean up to reduce image size
 
 # Set the working directory in the container
