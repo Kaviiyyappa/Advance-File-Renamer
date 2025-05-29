@@ -49,7 +49,7 @@ class Config(object):
     MAX_CONCURRENT_TASKS = 25
     GLOBAL_TOKEN_MODE = False
     GLOBAL_TOKEN_EXPIRY = None
-    SESSION_NAME = "IKBRYT"
+    SESSION_NAME = "DARKXSIDE78"
     WEBHOOK = bool(os.environ.get("WEBHOOK", "True"))
     WEBHOOK_PORT = os.environ.get("WEBHOOK_PORT", "8080")
 
