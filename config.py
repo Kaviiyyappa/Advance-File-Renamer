@@ -21,19 +21,19 @@ class Config(object):
     FORCE_SUB_CHANNELS = os.environ.get('FORCE_SUB_CHANNELS', '@IKBRYTLinkz').split(', ')
     LOG_CHANNEL = os.environ.get("LOG_CHANNEL", "-1002586186825")
     DUMP_CHANNEL = os.environ.get("DUMP_CHANNEL", "-1002586186825")
-    BOT_CHANNEL_NAME = os.environ.get("BOT_CHANNEL_NAME", "ʙᴏᴛs ɴᴀᴛɪᴏɴ")
-    BOT_CHANNEL_USERNAME = os.environ.get("BOT_CHANNEL_USERNAME", "Bots_Nation")
-    SUPPORT_CHANNEL_NAME = os.environ.get("SUPPORT_CHANNEL_NAME", "ʙᴏᴛs ɴᴀᴛɪᴏɴ sᴜᴘᴘᴏʀᴛ")
-    SUPPORT_CHANNEL_USERNAME = os.environ.get("SUPPORT_CHANNEL_USERNAME", "Bots_Nation_Support")
-    BOT_USERNAME = os.environ.get("BOT_USERNAME", "AnimeRenamerBot")
-    BOT_NAME = os.environ.get("BOT_NAME", "Sᴀsᴜᴋᴇ Uᴄʜɪʜᴀ")
-    OWNER_NAME = os.environ.get("OWNER_NAME", " 𝗘𝗥𝗔 『𝗗𝗔𝗥𝗞𝗫𝗦𝗜𝗗𝗘』 ♪")
-    OWNER_USERNAME = os.environ.get("OWNER_USERNAME", "DARKXSIDE78")
-    DEVELOPER_USERNAME = os.environ.get("DEVELOPER_USERNAME", "FraxxShadow")
-    DEVELOPER_NAME = os.environ.get("DEVELOPER_NAME", "FraxxShadow")
+    BOT_CHANNEL_NAME = os.environ.get("BOT_CHANNEL_NAME", "IKBRYTLinkz")
+    BOT_CHANNEL_USERNAME = os.environ.get("BOT_CHANNEL_USERNAME", "IKBRYTLinkz")
+    SUPPORT_CHANNEL_NAME = os.environ.get("SUPPORT_CHANNEL_NAME", "IKBRYTLinkz")
+    SUPPORT_CHANNEL_USERNAME = os.environ.get("SUPPORT_CHANNEL_USERNAME", "IKBRYTLinkz")
+    BOT_USERNAME = os.environ.get("BOT_USERNAME", "IKBRTY_STORAGEBOT")
+    BOT_NAME = os.environ.get("BOT_NAME", "FILE_STORAGE")
+    OWNER_NAME = os.environ.get("OWNER_NAME", "𝐈𝐊𝐁𝐑𝐘𝐓_𝐒𝐔𝐏𝐏𝐎𝐑𝐓")
+    OWNER_USERNAME = os.environ.get("OWNER_USERNAME", "IKBRYT_SUPPORT")
+    DEVELOPER_USERNAME = os.environ.get("DEVELOPER_USERNAME", "IKBRYT_SUPPORT")
+    DEVELOPER_NAME = os.environ.get("DEVELOPER_NAME", "IKBRYT_SUPPORT")
     #TOKEN_API = "https://instantearn.in/api?api=fa0dc64a5224ed38ec7b25c70f40922a1f8aeb15&format=text"
-    TOKEN_API = "533ce3f92f47b35345541ac59f7010de31fbeba7"
-    SHORTENER_URL = "https://droplink.co/api"
+    TOKEN_API = ""
+    SHORTENER_URL = ""
     TOKEN_ID_LENGTH = 8
     SHORTENER_TOKEN_GEN = 100
     VERSION = "4.1.2"
@@ -49,7 +49,7 @@ class Config(object):
     MAX_CONCURRENT_TASKS = 25
     GLOBAL_TOKEN_MODE = False
     GLOBAL_TOKEN_EXPIRY = None
-    SESSION_NAME = "DARKXSIDE78"
+    SESSION_NAME = "IKBRYT"
     WEBHOOK = bool(os.environ.get("WEBHOOK", "True"))
     WEBHOOK_PORT = os.environ.get("WEBHOOK_PORT", "8000")
 
