@@ -51,7 +51,7 @@ class Config(object):
     GLOBAL_TOKEN_EXPIRY = None
     SESSION_NAME = "IKBRYT"
     WEBHOOK = bool(os.environ.get("WEBHOOK", "True"))
-    WEBHOOK_PORT = os.environ.get("WEBHOOK_PORT", "8000")
+    WEBHOOK_PORT = os.environ.get("WEBHOOK_PORT", "8080")
 
 
 class Txt(object):
