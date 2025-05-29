@@ -18,9 +18,9 @@ class Config(object):
     FORCE_PIC   = os.environ.get("FORCE_PIC", "https://www.wallpaperflare.com/static/591/238/424/naruto-shippuuden-uzumaki-naruto-uchiha-sasuke-rinnegan-wallpaper.jpg")
     ADMINS       = [int(admins) if id_pattern.search(admins) else admins for admins in os.environ.get('ADMINS', '67570141467').split()]
     ADMIN       = [int(admin) if id_pattern.search(admin) else admin for admin in os.environ.get('ADMIN', '67570141467').split()]
-    FORCE_SUB_CHANNELS = os.environ.get('FORCE_SUB_CHANNELS', '@IKBRYTLinkz').split(', ')
+    FORCE_SUB_CHANNELS = os.environ.get('FORCE_SUB_CHANNELS', 'IKBRYTLinkz').split(', ')
     LOG_CHANNEL = os.environ.get("LOG_CHANNEL", "-1002586186825")
-    DUMP_CHANNEL = os.environ.get("DUMP_CHANNEL", "-1002586186825")
+    DUMP_CHANNEL = os.environ.get("DUMP_CHANNEL", "-1002223209081")
     BOT_CHANNEL_NAME = os.environ.get("BOT_CHANNEL_NAME", "IKBRYTLinkz")
     BOT_CHANNEL_USERNAME = os.environ.get("BOT_CHANNEL_USERNAME", "IKBRYTLinkz")
     SUPPORT_CHANNEL_NAME = os.environ.get("SUPPORT_CHANNEL_NAME", "IKBRYTLinkz")
