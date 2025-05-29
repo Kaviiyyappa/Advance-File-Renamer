@@ -4,23 +4,23 @@ id_pattern = re.compile(r'^.\d+$')
 
 
 class Config(object):
-    API_ID    = os.environ.get("API_ID", "17417255")
-    API_HASH  = os.environ.get("API_HASH", "73d424d9847f968130cd5b41946f7a5d")
-    BOT_TOKEN = os.environ.get("BOT_TOKEN", "7273299519:AAHxRAL5SBMuOkG0gLDYa8PoovxBNu8C7D0") 
+    API_ID    = os.environ.get("API_ID", "21939922")
+    API_HASH  = os.environ.get("API_HASH", "bd2d18dd26b200480bda4cbdf2c2da30")
+    BOT_TOKEN = os.environ.get("BOT_TOKEN", "") 
 
     DB_NAME = os.environ.get("DB_NAME","RenamerBot")     
-    DB_URL  = os.environ.get("DB_URL","mongodb+srv://nitinkumardhundhara:DARKXSIDE78@cluster0.wdive.mongodb.net/?retryWrites=true&w=majority")
+    DB_URL  = os.environ.get("DB_URL","mongodb+srv://ikbryt666:YJIcbUwfBRsJVelb@cluster0.2odc3wb.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0")
     PORT = os.environ.get("PORT", "8080")
  
     BOT_UPTIME  = time.time()
     START_PIC   = os.environ.get("START_PIC", "https://iili.io/3KDcyZB.md.jpg")
     START_STICKER   = "CAACAgUAAyEFAASUwGgHAAIQwWgEbJZ5TgLj7QXhvMhGtWF2L30EAAIzEwACTrLwVSdrhgIPuK1TNgQ"
     FORCE_PIC   = os.environ.get("FORCE_PIC", "https://www.wallpaperflare.com/static/591/238/424/naruto-shippuuden-uzumaki-naruto-uchiha-sasuke-rinnegan-wallpaper.jpg")
-    ADMINS       = [int(admins) if id_pattern.search(admins) else admins for admins in os.environ.get('ADMINS', '6302971969 7086472788 6039119180 1136967391').split()]
-    ADMIN       = [int(admin) if id_pattern.search(admin) else admin for admin in os.environ.get('ADMIN', '6302971969 7086472788 6039119180 1136967391').split()]
-    FORCE_SUB_CHANNELS = os.environ.get('FORCE_SUB_CHANNELS', '@Bots_Nation').split(', ')
-    LOG_CHANNEL = os.environ.get("LOG_CHANNEL", "-1002385922224")
-    DUMP_CHANNEL = os.environ.get("DUMP_CHANNEL", "-1002264269433")
+    ADMINS       = [int(admins) if id_pattern.search(admins) else admins for admins in os.environ.get('ADMINS', '67570141467').split()]
+    ADMIN       = [int(admin) if id_pattern.search(admin) else admin for admin in os.environ.get('ADMIN', '67570141467').split()]
+    FORCE_SUB_CHANNELS = os.environ.get('FORCE_SUB_CHANNELS', '@IKBRYTLinkz').split(', ')
+    LOG_CHANNEL = os.environ.get("LOG_CHANNEL", "-1002586186825")
+    DUMP_CHANNEL = os.environ.get("DUMP_CHANNEL", "-1002586186825")
     BOT_CHANNEL_NAME = os.environ.get("BOT_CHANNEL_NAME", "ʙᴏᴛs ɴᴀᴛɪᴏɴ")
     BOT_CHANNEL_USERNAME = os.environ.get("BOT_CHANNEL_USERNAME", "Bots_Nation")
     SUPPORT_CHANNEL_NAME = os.environ.get("SUPPORT_CHANNEL_NAME", "ʙᴏᴛs ɴᴀᴛɪᴏɴ sᴜᴘᴘᴏʀᴛ")
